@@ -19,7 +19,7 @@ hello_world <- function() .Call(wrap__hello_world)
 add <- function(x, y) .Call(wrap__add, x, y)
 
 #' @export
-utm <- function() .Call(wrap__utm)
+utm <- function(xx, yy) .Call(wrap__utm, xx, yy)
 
 #' @export
 rumination_000 <- function() .Call(wrap__rumination_000)

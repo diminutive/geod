@@ -19,9 +19,22 @@ fn add(x: i32, y: i32) -> i32 {
 }
 
 
+fn trans(xx: &[f64], yy: &[f64]) -> anyhow::Result<f64> {
+  let mut context = Minimal::new();
+  let utm33 = context.op("utm zone=33")?;
 
+//  let x_vec: Option<Vec<f64>> = xx.as_real_vector();
+//  let y_vec: Option<Vec<f64>> = yy.as_real_vector();
 
-fn internal() -> anyhow::Result<()> {
+  let pt = Coor2D::geo(xx[0], yy[0]);
+  let mut data = [pt];
+
+  context.apply(utm33, Fwd, &mut data);
+   let out = data[0][0];
+  Ok(out)
+}
+
+fn internal() -> anyhow::Result<f64> {
     let mut context = Minimal::new();
     let utm33 = context.op("utm zone=33")?;
 
@@ -29,29 +42,44 @@ fn internal() -> anyhow::Result<()> {
     let sth = Coor4D::geo(59., 18., 0., 0.); // Stockholm
     let mut data = [cph, sth];
 
-    context.apply(utm33, Fwd, &mut data)?;
-    println!("{:?}", data);
-    Ok(())
-}
 
+    context.apply(utm33, Fwd, &mut data);
+    let x = data[0];
+    let y = x[0];
+    println!("{:?}", y);
+    Ok(y)
+}
 /// @export
 #[extendr]
-fn utm() -> i32 {
-    //let mut context = Plain::new();
-    //let utm33 = context.op("utm zone=33");
+fn utm(xx: &[f64], yy: &[f64]) -> Robj {
 
-    let cph = Coor4D::geo(55., 12., 0., 0.); // Copenhagen
-    //let sth = Coor4D::geo(59., 18., 0., 0.); // Stockholm
+    let mut context = Minimal::new();
+    use geodesy::operator_authoring::Op;
+    let utm33 = Op::new("utm zone=33", &context).expect("bad!"); // context.op("utm zone=33");
 
-    let sth = internal();
+  //  let cph = Coor4D::geo(55., 12., 0., 0.); // Copenhagen
+  //  let sth = Coor4D::geo(59., 18., 0., 0.); // Stockholm
+  //  let mut data = [cph, sth];
 
-    //let cph = Coor2D::geo(55., 12.); // Copenhagen
-    //let sth = Coor2D::geo(59., 18.); // Stockholm
-    //let mut data = [cph, sth];
+// utm33.apply(&context, &mut data, Fwd);
 
-    //context.apply(utm33, Fwd, &mut data);
-    //println!("{:?}", data);
-    1
+
+  let mut outx = Doubles::from_values(xx);
+  let mut outy = Doubles::from_values(yy);
+
+  let len =  outx.len();
+  for p0 in 0..len {
+
+    let pt = Coor2D::geo(xx[p0], yy[p0]);
+    let mut data = [pt];
+
+    utm33.apply(&context, &mut data, Fwd);
+
+    outx[p0] = Rfloat(data[0][0]);
+    outy[p0] = Rfloat(data[0][1]);
+
+  }
+  r!(list!(x = outx, outy))
 }
 
 /// @export
